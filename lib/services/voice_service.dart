@@ -40,11 +40,7 @@ class VoiceService {
             onResult(result.recognizedWords);
           }
         },
-        onError: (error) {
-          onError(error.errorMsg);
-        },
         localeId: 'ja-JP', // Japanese locale
-        listenMode: ListenMode.confirmation,
       );
     } catch (e) {
       onError('Failed to start listening: $e');

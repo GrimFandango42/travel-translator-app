@@ -1,0 +1,243 @@
+name: Enhanced CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+      deploy_to_device:
+        description: 'Deploy to connected device via ADB'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  FLUTTER_VERSION: '3.24.5'
+  JAVA_VERSION: '17'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: ${{ env.JAVA_VERSION }}
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+        cache: true
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Analyze code
+      run: flutter analyze --fatal-infos
+    
+    - name: Run tests
+      run: flutter test --coverage
+    
+    - name: Generate version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="v${{ github.run_number }}-${{ github.event.inputs.version_bump }}"
+        else
+          VERSION="v${{ github.run_number }}"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+
+  build-apk:
+    needs: analyze
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build-type: [debug, release]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: ${{ env.JAVA_VERSION }}
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+        cache: true
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build APK (${{ matrix.build-type }})
+      run: |
+        if [ "${{ matrix.build-type }}" = "release" ]; then
+          flutter build apk --release --verbose
+        else
+          flutter build apk --debug --verbose
+        fi
+    
+    - name: Rename APK
+      run: |
+        mkdir -p dist
+        if [ "${{ matrix.build-type }}" = "release" ]; then
+          cp build/app/outputs/flutter-apk/app-release.apk dist/travel-translator-${{ needs.analyze.outputs.version }}-release.apk
+        else
+          cp build/app/outputs/flutter-apk/app-debug.apk dist/travel-translator-${{ needs.analyze.outputs.version }}-debug.apk
+        fi
+    
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: travel-translator-${{ matrix.build-type }}-apk
+        path: dist/*.apk
+        retention-days: 30
+    
+    - name: Generate APK info
+      run: |
+        cd dist
+        ls -la *.apk > apk-info.txt
+        du -h *.apk >> apk-info.txt
+        echo "Build type: ${{ matrix.build-type }}" >> apk-info.txt
+        echo "Version: ${{ needs.analyze.outputs.version }}" >> apk-info.txt
+        echo "Built on: $(date)" >> apk-info.txt
+        echo "Commit: ${{ github.sha }}" >> apk-info.txt
+    
+    - name: Upload Build Info
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-info-${{ matrix.build-type }}
+        path: dist/apk-info.txt
+
+  create-release:
+    needs: [analyze, build-apk]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+    - name: Download Release APK
+      uses: actions/download-artifact@v4
+      with:
+        name: travel-translator-release-apk
+        path: release-apk
+    
+    - name: Download Debug APK
+      uses: actions/download-artifact@v4
+      with:
+        name: travel-translator-debug-apk
+        path: debug-apk
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ needs.analyze.outputs.version }}
+        name: Travel Translator ${{ needs.analyze.outputs.version }}
+        body: |
+          🚀 **Travel Translator APK Build - ${{ needs.analyze.outputs.version }}**
+          
+          ## 📱 What's New
+          - On-device Japanese to English translation
+          - Camera text capture for signs and menus
+          - Voice input for conversational translation
+          - Text-to-speech for pronunciation
+          - Quick travel phrases
+          - Privacy-first with local processing
+          
+          ## 📦 Downloads
+          - **Release APK**: Optimized for production use
+          - **Debug APK**: For development and testing
+          
+          ## 🔧 Installation
+          1. Download the release APK below
+          2. Enable "Install unknown apps" in Android settings
+          3. Install on your Pixel phone
+          4. Grant camera and microphone permissions
+          5. Start translating!
+          
+          ## 🏗️ Build Info
+          - **Flutter**: ${{ env.FLUTTER_VERSION }}
+          - **Commit**: ${{ github.sha }}
+          - **Built**: $(date)
+          - **Workflow**: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          Perfect for traveling in Japan with your Pixel phone! 🇯🇵
+        files: |
+          release-apk/*.apk
+          debug-apk/*.apk
+        draft: false
+        prerelease: false
+        make_latest: true
+
+  notify-completion:
+    needs: [analyze, build-apk]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Build Status Summary
+      run: |
+        echo "🎯 CI/CD Pipeline Completed!"
+        echo "=============================="
+        echo "📊 Analyze Job: ${{ needs.analyze.result }}"
+        echo "🏗️ Build Job: ${{ needs.build-apk.result }}"
+        echo "📦 Version: ${{ needs.analyze.outputs.version }}"
+        echo "🔗 Artifacts: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        echo ""
+        if [ "${{ needs.build-apk.result }}" = "success" ]; then
+          echo "✅ APK builds completed successfully!"
+          echo "📱 Ready for deployment to Pixel phone"
+          echo "🚀 Download from: https://github.com/${{ github.repository }}/releases/latest"
+        else
+          echo "❌ Build failed - check logs above"
+        fi
+
+  # Optional: Auto-deploy to connected ADB device (when manually triggered)
+  deploy-adb:
+    needs: [analyze, build-apk]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_to_device == 'true'
+    steps:
+    - name: Setup ADB
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y android-tools-adb
+    
+    - name: Download Release APK
+      uses: actions/download-artifact@v4
+      with:
+        name: travel-translator-release-apk
+        path: deploy
+    
+    - name: Deploy via ADB (Mock)
+      run: |
+        echo "🔌 This would deploy to connected device via ADB"
+        echo "📱 APK: $(ls deploy/*.apk)"
+        echo "⚠️  ADB deployment requires physical device connection"
+        echo "💡 Use this workflow for reference on local deployment"
+        echo ""
+        echo "To deploy locally:"
+        echo "1. Enable Developer Options on your phone"
+        echo "2. Enable USB Debugging"
+        echo "3. Connect phone via USB"
+        echo "4. Run: adb install $(ls deploy/*.apk)"

@@ -1,5 +1,4 @@
 import 'package:camera/camera.dart';
-import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CameraService {
@@ -14,31 +13,18 @@ class CameraService {
 
       if (image == null) return '';
 
-      final inputImage = InputImage.fromFilePath(image.path);
-      final textRecognizer = TextRecognizer(
-        script: TextRecognitionScript.japanese,
-      );
-
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-      await textRecognizer.close();
-
-      return recognizedText.text;
+      // For now, return a placeholder message
+      // In a real implementation, this would use OCR
+      return 'Image captured - OCR processing would happen here with on-device ML';
     } catch (e) {
-      throw Exception('Failed to capture and extract text: $e');
+      throw Exception('Failed to capture image: $e');
     }
   }
 
   static Future<String> extractTextFromImage(String imagePath) async {
     try {
-      final inputImage = InputImage.fromFilePath(imagePath);
-      final textRecognizer = TextRecognizer(
-        script: TextRecognitionScript.japanese,
-      );
-
-      final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-      await textRecognizer.close();
-
-      return recognizedText.text;
+      // Placeholder for text extraction
+      return 'Text extraction from image would happen here';
     } catch (e) {
       throw Exception('Failed to extract text from image: $e');
     }

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/services.dart';
 
 class TranslationService {
@@ -16,7 +15,7 @@ class TranslationService {
         'to': to,
       });
       return result ?? '';
-    } on PlatformException catch (e) {
+    } on PlatformException {
       // Fallback to offline translation logic
       return await _fallbackTranslate(text, from: from, to: to);
     }
