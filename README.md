@@ -1,16 +1,24 @@
-# Travel Translator
+# Travel Translator 🚧 **Work in Progress**
 
 An on-device Japanese to English translator app optimized for travelers using Pixel phones and Gemini Nano AI.
 
+> **⚠️ DEVELOPMENT STATUS**: This project is currently in active development. Core translation features are functional with basic Japanese phrase support, but advanced features like Gemini Nano integration and camera OCR are still being implemented.
+
 ## Features
 
-- **Camera Text Capture**: Point your camera at Japanese signs, menus, or text to instantly translate
+### ✅ **Currently Working**
+- **Text Input Translation**: Type Japanese text for English translation (20+ common phrases supported)
 - **Voice Input**: Speak Japanese phrases for real-time translation
-- **On-Device Processing**: Uses Gemini Nano for fast, private translations without internet
-- **Traveler-Focused**: Quick access to common travel phrases and situations
-- **Offline Mode**: Core functionality works without internet connection
+- **Quick Travel Phrases**: Instant access to essential travel expressions
 - **Text-to-Speech**: Hear English pronunciations of translations
-- **Simple UI**: Clean, intuitive interface designed for quick use while traveling
+- **Simple UI**: Clean, intuitive Material Design interface
+- **Offline Mode**: Core phrase translation works without internet
+
+### 🚧 **In Development**
+- **Camera Text Capture**: OCR integration for signs, menus, and documents (UI ready, OCR pending)
+- **Gemini Nano Integration**: On-device AI for advanced translation (infrastructure ready)
+- **Expanded Phrase Library**: More comprehensive Japanese phrase coverage
+- **Advanced Voice Processing**: Improved speech recognition accuracy
 
 ## Key Technologies
 
@@ -28,11 +36,28 @@ An on-device Japanese to English translator app optimized for travelers using Pi
 
 ## Installation
 
+### Quick Install (Recommended)
+1. **Download Latest APK**: 
+   - Go to [GitHub Actions](https://github.com/GrimFandango42/travel-translator-app/actions)
+   - Download the latest successful build artifacts
+   - Install `travel-translator-release.apk` on your Android phone
+
+2. **Enable Installation**: 
+   - Settings → Security → "Install unknown apps" → Enable for your file manager
+
+### Development Build
 1. Ensure Flutter is installed on your development machine
 2. Clone this repository
 3. Run `flutter pub get` to install dependencies
 4. Connect your Pixel phone with USB debugging enabled
 5. Run `flutter run` to install and launch the app
+
+### Automated Deployment
+The project includes automated CI/CD pipeline with scripts for easy deployment:
+```bash
+./deploy_to_phone.sh  # Auto-deploy to connected phone
+./download_apk.sh     # Download latest GitHub build
+```
 
 ## Usage
 
@@ -50,9 +75,35 @@ An on-device Japanese to English translator app optimized for travelers using Pi
 - Camera images are processed locally and not stored
 - Voice input is processed locally without cloud services
 
+## Development Status & Roadmap
+
+### 🎯 **Current Phase**: Core Translation Features
+- ✅ Basic Japanese phrase translation (20+ phrases)
+- ✅ Voice input and text-to-speech output
+- ✅ Clean UI with Material Design 3
+- ✅ Automated CI/CD pipeline with GitHub Actions
+
+### 🔮 **Next Phase**: Advanced AI Integration
+- 🚧 Gemini Nano on-device translation
+- 🚧 Camera OCR with ML Kit
+- 🚧 Expanded phrase library
+- 🚧 Performance optimizations
+
+### 📝 **Known Limitations**
+- Translation currently limited to pre-defined phrases
+- Camera feature shows placeholder (OCR integration pending)
+- Requires internet for voice recognition
+
 ## Contributing
 
-This is a demonstration app showcasing on-device AI capabilities. Feel free to fork and extend the functionality for your travel needs.
+This is an active development project showcasing on-device AI capabilities for travel translation. Contributions welcome:
+
+1. **Translation Phrases**: Add more common Japanese travel phrases
+2. **UI/UX Improvements**: Enhance user experience and accessibility  
+3. **Feature Implementation**: Help implement Gemini Nano or ML Kit features
+4. **Testing**: Report bugs and test on different devices
+
+Feel free to fork, create issues, or submit pull requests!
 
 ## License
 
